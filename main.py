@@ -14,19 +14,21 @@ def home():
     return "Vantix Manager is Alive!"
 
 def run_web():
+    # Render ke liye port binding
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host='0.0.0.0', port=port)
 
 # --- CONFIGURATION ---
 API_ID = 30150739 
 API_HASH = "c1403e995a27e4474771009fb65cf5b7"
-BOT_TOKEN = "APNA_BOT_TOKEN_YAHAN_DAAL" # <--- Apna token yahan paste kar
+BOT_TOKEN = "8714740374:AAEmTRvcMPOBvfVGSEKI9BDZHlEg9CTGloE" # <--- Apna token yahan paste karna
 
 FORUM_GC_ID = -1003800395326
 CHAT_GC_ID = -1003741678126
 
 warns = {}
 
+# Client ko loop ke bahar sirf define karna hai
 app = Client("VantixManager", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # --- ADMIN CHECK ---
@@ -88,8 +90,8 @@ async def promote_cmd(client, message):
             privileges=ChatPrivileges(can_manage_chat=True, can_delete_messages=True, can_restrict_members=True))
         await message.reply_text("👑 Promoted to Admin!")
 
-# --- BOOTSTRAP ---
-async def main():
+# --- STARTING THE BOT PROPERLY ---
+async def start_bot():
     # Flask ko thread mein chalana
     Thread(target=run_web).start()
     
@@ -97,8 +99,15 @@ async def main():
     await app.start()
     print("Vantix Manager is Live and Running...")
     
-    # Isse bot online rahega
-    await asyncio.Event().wait()
+    # Bot ko chalta rakhne ke liye idle setup
+    from pyrogram.methods.utilities.idle import idle
+    await idle()
+    
+    # Stop cleanly
+    await app.stop()
 
 if __name__ == "__main__":
-    asyncio.run(main()) # Naya loop yahan ban raha hai
+    # Naya event loop manually banana aur chalana
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_bot())
+    
