@@ -1,12 +1,27 @@
+
 import os
 import re
 from pyrogram import Client, filters, enums
 from pyrogram.types import ChatPrivileges
+from flask import Flask
+from threading import Thread
+
+# --- WEB SERVER FOR RENDER ---
+web_app = Flask(__name__)
+
+@web_app.route('/')
+def home():
+    return "Vantix Manager is Alive!"
+
+def run_web():
+    # Render default port 10000 use karta hai ya environment se uthata hai
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host='0.0.0.0', port=port)
 
 # --- CONFIGURATION ---
 API_ID = 30150739 
 API_HASH = "c1403e995a27e4474771009fb65cf5b7"
-BOT_TOKEN = "8714740374:AAEmTRvcMPOBvfVGSEKI9BDZHlEg9CTGloE" # <--- Yahan token daal
+BOT_TOKEN = "APNA_BOT_TOKEN_YAHAN_DAAL" # <--- Yahan apna token paste kar
 
 FORUM_GC_ID = -1003800395326
 CHAT_GC_ID = -1003741678126
@@ -53,8 +68,8 @@ async def handle_spam(client, message):
                 warns[warn_key] = 0
             else:
                 await client.send_message(chat_id, f"⚠️ {message.from_user.mention}, No Promo/Links! Warning: {warns[warn_key]}/3")
-        except:
-            pass
+        except Exception as e:
+            print(f"Error: {e}")
 
 @app.on_message(filters.command("ban", prefixes=".") & filters.group)
 async def ban_cmd(client, message):
@@ -62,13 +77,6 @@ async def ban_cmd(client, message):
     if message.reply_to_message:
         await client.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
         await message.reply_text("🔨 User Banned!")
-
-@app.on_message(filters.command("mute", prefixes=".") & filters.group)
-async def mute_cmd(client, message):
-    if not await is_admin(message.chat.id, message.from_user.id): return
-    if message.reply_to_message:
-        await client.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, enums.ChatPermissions())
-        await message.reply_text("🤫 Muted!")
 
 @app.on_message(filters.command("promote", prefixes=".") & filters.group)
 async def promote_cmd(client, message):
@@ -78,6 +86,9 @@ async def promote_cmd(client, message):
             privileges=ChatPrivileges(can_manage_chat=True, can_delete_messages=True, can_restrict_members=True))
         await message.reply_text("👑 Promoted to Admin!")
 
-print("Vantix Manager is Live...")
-app.run()
-                
+# --- START BOT ---
+if __name__ == "__main__":
+    Thread(target=run_web).start() # Web server start karega
+    print("Vantix Manager is Live...")
+    app.run()
+    
