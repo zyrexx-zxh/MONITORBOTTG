@@ -1,6 +1,6 @@
-
 import os
 import re
+import asyncio
 from pyrogram import Client, filters, enums
 from pyrogram.types import ChatPrivileges
 from flask import Flask
@@ -14,14 +14,13 @@ def home():
     return "Vantix Manager is Alive!"
 
 def run_web():
-    # Render default port 10000 use karta hai ya environment se uthata hai
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host='0.0.0.0', port=port)
 
 # --- CONFIGURATION ---
 API_ID = 30150739 
 API_HASH = "c1403e995a27e4474771009fb65cf5b7"
-BOT_TOKEN = "APNA_BOT_TOKEN_YAHAN_DAAL" # <--- Yahan apna token paste kar
+BOT_TOKEN = "APNA_BOT_TOKEN_YAHAN_DAAL" # <--- Apna token yahan paste kar
 
 FORUM_GC_ID = -1003800395326
 CHAT_GC_ID = -1003741678126
@@ -30,6 +29,7 @@ warns = {}
 
 app = Client("VantixManager", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
+# --- ADMIN CHECK ---
 async def is_admin(chat_id, user_id):
     try:
         member = await app.get_chat_member(chat_id, user_id)
@@ -37,6 +37,7 @@ async def is_admin(chat_id, user_id):
     except:
         return False
 
+# --- SPAM HANDLER ---
 @app.on_message(filters.group & ~filters.service)
 async def handle_spam(client, message):
     if not message.from_user: return
@@ -68,9 +69,10 @@ async def handle_spam(client, message):
                 warns[warn_key] = 0
             else:
                 await client.send_message(chat_id, f"⚠️ {message.from_user.mention}, No Promo/Links! Warning: {warns[warn_key]}/3")
-        except Exception as e:
-            print(f"Error: {e}")
+        except:
+            pass
 
+# --- ADMIN COMMANDS ---
 @app.on_message(filters.command("ban", prefixes=".") & filters.group)
 async def ban_cmd(client, message):
     if not await is_admin(message.chat.id, message.from_user.id): return
@@ -86,9 +88,17 @@ async def promote_cmd(client, message):
             privileges=ChatPrivileges(can_manage_chat=True, can_delete_messages=True, can_restrict_members=True))
         await message.reply_text("👑 Promoted to Admin!")
 
-# --- START BOT ---
-if __name__ == "__main__":
-    Thread(target=run_web).start() # Web server start karega
-    print("Vantix Manager is Live...")
-    app.run()
+# --- BOOTSTRAP ---
+async def main():
+    # Flask ko thread mein chalana
+    Thread(target=run_web).start()
     
+    # Bot start karna
+    await app.start()
+    print("Vantix Manager is Live and Running...")
+    
+    # Isse bot online rahega
+    await asyncio.Event().wait()
+
+if __name__ == "__main__":
+    asyncio.run(main()) # Naya loop yahan ban raha hai
