@@ -1,34 +1,32 @@
 import os
 import re
-import asyncio
 from pyrogram import Client, filters, enums
 from pyrogram.types import ChatPrivileges
 from flask import Flask
 from threading import Thread
 
-# --- WEB SERVER FOR RENDER ---
+# --- WEB SERVER ---
 web_app = Flask(__name__)
 
 @web_app.route('/')
 def home():
-    return "Vantix Manager is Alive!"
+    return "Vantix Manager is Running!"
 
 def run_web():
-    # Render ke liye port binding
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host='0.0.0.0', port=port)
 
 # --- CONFIGURATION ---
+# Note: Is code mein maine loop ka jhamela hata diya hai
 API_ID = 30150739 
 API_HASH = "c1403e995a27e4474771009fb65cf5b7"
-BOT_TOKEN = "8714740374:AAEmTRvcMPOBvfVGSEKI9BDZHlEg9CTGloE" # <--- Apna token yahan paste karna
+BOT_TOKEN = "814740374:AAEmTRvcMPOBvfVGSEKI9BDZHlEg9CTGloE" # Naya token yahan daalna agar revoke kiya toh
 
 FORUM_GC_ID = -1003800395326
 CHAT_GC_ID = -1003741678126
 
 warns = {}
 
-# Client ko loop ke bahar sirf define karna hai
 app = Client("VantixManager", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # --- ADMIN CHECK ---
@@ -39,7 +37,7 @@ async def is_admin(chat_id, user_id):
     except:
         return False
 
-# --- SPAM HANDLER ---
+# --- HANDLERS ---
 @app.on_message(filters.group & ~filters.service)
 async def handle_spam(client, message):
     if not message.from_user: return
@@ -74,7 +72,6 @@ async def handle_spam(client, message):
         except:
             pass
 
-# --- ADMIN COMMANDS ---
 @app.on_message(filters.command("ban", prefixes=".") & filters.group)
 async def ban_cmd(client, message):
     if not await is_admin(message.chat.id, message.from_user.id): return
@@ -90,24 +87,11 @@ async def promote_cmd(client, message):
             privileges=ChatPrivileges(can_manage_chat=True, can_delete_messages=True, can_restrict_members=True))
         await message.reply_text("👑 Promoted to Admin!")
 
-# --- STARTING THE BOT PROPERLY ---
-async def start_bot():
-    # Flask ko thread mein chalana
-    Thread(target=run_web).start()
-    
-    # Bot start karna
-    await app.start()
-    print("Vantix Manager is Live and Running...")
-    
-    # Bot ko chalta rakhne ke liye idle setup
-    from pyrogram.methods.utilities.idle import idle
-    await idle()
-    
-    # Stop cleanly
-    await app.stop()
-
+# --- EXECUTION ---
 if __name__ == "__main__":
-    # Naya event loop manually banana aur chalana
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_bot())
+    # Start web server
+    Thread(target=run_web).start()
+    print("Web server started...")
+    # Start bot directly with app.run()
+    app.run()
     
